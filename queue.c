@@ -201,8 +201,8 @@ void q_reverseK(struct list_head *head, int k)
         remain_head = safe->prev;
     }
 }
-void q_merge2(struct list_head *head,
-              struct list_head *second_head,
+void q_merge2(struct list_head *second_head,
+              struct list_head *head,
               bool descend)
 {
     /* merge two list and head will point to the new list */
@@ -224,7 +224,7 @@ void q_merge2(struct list_head *head,
      * the new list */
     list_splice(&temp, head);
     if (!list_empty(second_head)) {
-        list_splice_tail(second_head, head);
+        list_splice_tail_init(second_head, head);
     }
 }
 /* Sort elements of queue in ascending/descending order */
@@ -244,7 +244,7 @@ void q_sort(struct list_head *head, bool descend)
     list_cut_position(&split_head, head, mid->prev);
     q_sort(head, descend);
     q_sort(&split_head, descend);
-    q_merge2(head, &split_head, descend);
+    q_merge2(&split_head, head, descend);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to
@@ -252,7 +252,7 @@ void q_sort(struct list_head *head, bool descend)
 int q_ascend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    if (!head || list_empty(head) || list_is_singular(head))
+    if (!head || list_empty(head))
         return 0;
     if (list_is_singular(head))
         return 1;
@@ -281,7 +281,7 @@ int q_ascend(struct list_head *head)
 int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    if (!head || list_empty(head) || list_is_singular(head))
+    if (!head || list_empty(head))
         return 0;
     if (list_is_singular(head))
         return 1;
@@ -310,5 +310,17 @@ int q_descend(struct list_head *head)
 int q_merge(struct list_head *head, bool descend)
 {
     // https://leetcode.com/problems/merge-k-sorted-lists/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+    if (list_is_singular(head))
+        return list_first_entry(head, queue_contex_t, chain)->size;
+    LIST_HEAD(stack);
+    queue_contex_t *cur, *safe;
+    int count = 0;
+    list_for_each_entry_safe (cur, safe, head, chain) {
+        count += cur->size;
+        q_merge2(cur->q, &stack, descend);
+    }
+    list_splice(&stack, list_first_entry(head, queue_contex_t, chain)->q);
+    return count;
 }
